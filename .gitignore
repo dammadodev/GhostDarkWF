@@ -1,0 +1,13 @@
+# Binary and log files
+logs/*
+*.cap
+*.pcap
+*.pcapng
+*.hccapx
+*.hc22000
+*.log
+*.ivs
+
+# System files
+.DS_Store
+Thumbs.db
