@@ -4,21 +4,44 @@
 
 function start_capture() {
     echo -e "\n${BLUE}[*] Módulo de Captura (Handshake / PMKID)${NC}"
-    echo -e "${YELLOW}Interfaz (Modo Monitor): ${NC}"
-    read iface
-    echo -e "${YELLOW}BSSID del objetivo: ${NC}"
-    read bssid
-    echo -e "${YELLOW}Canal (Channel): ${NC}"
-    read channel
-    echo -e "${YELLOW}Nombre para el archivo de salida (ej: target_wifi): ${NC}"
+    
+    # Auto-selección de Interfaz
+    local iface=$(select_interface)
+    [[ -z "$iface" ]] && return
+
+    # Verificar si ya existe un objetivo seleccionado
+    local bssid="$TARGET_BSSID"
+    local channel="$TARGET_CHANNEL"
+    local essid="$TARGET_ESSID"
+
+    if [[ -z "$bssid" ]]; then
+        echo -e "${YELLOW}[!] No hay objetivo seleccionado. ¿Quieres escanear uno ahora? (s/n)${NC}"
+        read -p "> " scan_now
+        if [[ "$scan_now" == "s" ]]; then
+            select_network "$iface"
+            bssid="$TARGET_BSSID"
+            channel="$TARGET_CHANNEL"
+            essid="$TARGET_ESSID"
+        fi
+    fi
+
+    # Si sigue vacío, preguntar manualmente
+    if [[ -z "$bssid" ]]; then
+        read -p "BSSID del objetivo: " bssid
+        read -p "Canal del objetivo: " channel
+        read -p "Nombre ESSID (opcional): " essid
+    fi
+
+    echo -e "${YELLOW}Nombre para el archivo de salida (Sugerido: ${essid:-capture}): ${NC}"
     read output_name
+    output_name="${output_name:-${essid:-capture}}"
     
     local out_path="$LOGS/$output_name"
 
     echo -e "\n1) Captura Global (airodump-ng)"
     echo "2) Ataque Deauth (aireplay-ng) + Captura"
-    echo "3) Captura PMKID (hcxdumptool - Recomendado para WPA2 sin clientes)"
-    read method
+    echo "3) Captura PMKID (hcxdumptool)"
+    read -p "Método: " method
 
     case $method in
         1)

@@ -2,38 +2,52 @@
 
 # --- Module: Network & Interfaces ---
 
+function select_interface() {
+    local interfaces=$(iw dev | grep Interface | awk '{print $2}')
+    if [[ -z "$interfaces" ]]; then
+        echo -e "${RED}[!] No se detectaron interfaces inalámbricas.${NC}"
+        return 1
+    fi
+    
+    echo -e "$interfaces" | fzf --height 40% --reverse --header="Selecciona la interfaz inalámbrica:" --border
+}
+
 function manage_interfaces() {
-    echo -e "\n${BLUE}[*] Interfaces Inalámbricas Disponibles:${NC}"
-    iw dev | grep Interface | awk '{print $2}'
+    echo -e "\n${BLUE}[*] Escaneando Interfaces Inalámbricas...${NC}"
+    local iface=$(select_interface)
     
-    echo -e "\n${YELLOW}Nombre de la interfaz (ej: wlan0): ${NC}"
-    read iface
+    if [[ -z "$iface" ]]; then
+        echo -e "${RED}[!] Selección cancelada.${NC}"
+        sleep 1
+        return
+    fi
     
-    echo "1) Iniciar Modo Monitor"
+    echo -e "\n${BLUE}[*] Interfaz seleccionada: ${YELLOW}$iface${NC}"
+    echo "1) Iniciar Modo Monitor (airmon-ng)"
     echo "2) Detener Modo Monitor"
     echo "3) Cambiar MAC Address (Anonimato)"
     echo "4) Volver"
-    read subopt
+    read -p "Opcion: " subopt
     
     case $subopt in
         1)
             airmon-ng check kill
             airmon-ng start "$iface"
-            echo -e "${GREEN}[+] Modo monitor activado en ${iface}${NC}"
+            echo -e "${GREEN}[+] Modo monitor activado.${NC}"
             sleep 2
             ;;
         2)
-            airmon-ng stop "${iface}mon" 2>/dev/null || airmon-ng stop "$iface"
-            echo -e "${GREEN}[+] Modo monitor desactivado${NC}"
+            # Intentar detener tanto el nombre original como el nombre monitor (wlan0mon)
+            airmon-ng stop "$iface" 2>/dev/null
+            echo -e "${GREEN}[+] Intento de detener modo monitor finalizado.${NC}"
             service networking restart
-            service wpa_supplicant restart
             sleep 2
             ;;
         3)
             ip link set "$iface" down
             macchanger -r "$iface"
             ip link set "$iface" up
-            echo -e "${GREEN}[+] MAC cambiada aleatoriamente${NC}"
+            echo -e "${GREEN}[+] MAC cambiada aleatoriamente.${NC}"
             sleep 2
             ;;
         *) return ;;

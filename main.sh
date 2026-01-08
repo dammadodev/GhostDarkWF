@@ -16,6 +16,11 @@ DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 MODULES="$DIR/modules"
 LOGS="$DIR/logs"
 
+# Global target persistence
+TARGET_BSSID=""
+TARGET_CHANNEL=""
+TARGET_ESSID=""
+
 # Check Root
 if [[ $EUID -ne 0 ]]; then
    echo -e "${RED}[!] Este script debe ejecutarse como root${NC}"
